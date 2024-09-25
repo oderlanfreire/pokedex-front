@@ -68,7 +68,16 @@ async function  loadPokemons() {
         return card
     }) 
     
-    pokeCards.forEach(card =>{
+    pokeCards.forEach((card, index) =>{
+        const pokeType = detailsPokemons[index].types.split(', ')[0]
+
+        card.addEventListener('mouseover', () => {
+            document.body.style.backgroundColor = typeColors[pokeType] || '#f6bd20'
+        })
+
+        card.addEventListener('mouseout', () => {
+            document.body.style.backgroundColor = ''
+        })
         containerCard.append(card)
     })
 
@@ -159,68 +168,103 @@ function showPokemon(data){
             <div class="card-body">
                 <span class="card-title">${data.name.charAt(0).toUpperCase() + data.name.slice(1)}</span>
                 <p class="card-text">Type(s): ${data.types}</p>
-                <button class="favoritos" data-name="${data.name}">
-                    <img src="../../public/pokeball.svg" alt="Favoritar" style="width: 24px; height: 24px;">
-                </button>
+                <img src="../../public/pokeball.svg" alt="Favoritar" style="width: 24px; height: 24px;"class="clickable-image favoritos" data-name="${data.name}">
             </div>
         </div>`
     containerCard.append(card)
+
+    const favPokemonSwitch = document.querySelector('.favoritos')
+    favPokemonSwitch.addEventListener('click', (e) =>{
+        const pokeName = e.target.getAttribute('data-name')
+        toggleFav(pokeName)
+    }) 
+
 }
 function clearScreen(){
     const containerCard = document.getElementById('cardContainer')
     containerCard.innerHTML = ''
 }
 
-document.addEventListener('click', (e) =>{
-    if(e.target.classList.contains('favoritos')){
-        const pokeName = e.target.getAttribute('data-name')
-        toggleFav(pokeName)
-    }
-})
+
+
 
 document.getElementById('pokefavs').addEventListener('click', showFav)
 
 function toggleFav(pokeName) {
+    console.log(pokeName)
     let fav = JSON.parse(localStorage.getItem('pokemonsFavoritos')) || []
-    
+    console.log(fav)
+
     if(fav.includes(pokeName)){
         const removerPokemon = confirm(`Deseja remover ${pokeName} dos favoritos?`)
         if(removerPokemon){
             fav = fav.filter(name => name !== pokeName)
             alert(`${pokeName} removido dos favoritos.`)
-        } else {
-            const addPokemon = confirm(`Deseja adicionar ${pokeName} aos favoritos?`);
-            if (addPokemon) {
-                favorites.push(pokeName);
-                alert(`${pokeName} adicionado aos favoritos.`);
-            }
+        }
+    } else {
+        const addPokemon = confirm(`Deseja adicionar ${pokeName} aos favoritos?`);
+        if (addPokemon) {
+            fav.push(pokeName);
+            alert(`${pokeName} adicionado aos favoritos.`);
         }
     }
+    
 
     localStorage.setItem('pokemonsFavoritos', JSON.stringify(fav))
 }
 
-function showFav(){
+function showFav() {
+    const backBt = document.getElementById('backBt')
+    const nextBt = document.getElementById('nextBt')
+    backBt.classList.add('d-none')
+    nextBt.classList.add('d-none')
+
     const fav = JSON.parse(localStorage.getItem('pokemonsFavoritos')) || []
     const containerCard = document.getElementById('cardContainer')
-    containerCard.innerHTML = '';
+    containerCard.innerHTML = ''
 
-    fav.forEach(async (name) =>{
+    const div = document.createElement('div')
+    div.className = 'row'
+
+    const favPromises = fav.map(async (name) => {
         const pokemon = await getPokemon(name)
-        const card = document.getElementById('div')
-        card.className = 'col-md-12'
-        card.innerHTML = 
-        `<div class="card mb-4">
+        const card = document.createElement('div')
+        card.className = 'col-md-6'
+        card.innerHTML = `
+            <div class="card mb-4">
                 <img src="${pokemon.img}" class="card-img-top" alt="${pokemon.name}">
                 <div class="card-body">
                     <span class="card-title">${pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}</span>
                     <p class="card-text">Type(s): ${pokemon.types}</p>
-                    <button class="favoritos" data-name="${pokemon.name}">
-                    <img src="../../public/pokeball.svg" alt="Favoritar" style="width: 24px; height: 24px;">
-                    </button>
+                    <img src="../../public/pokeball.svg" alt="Favoritar" style="width: 24px; height: 24px;" class="clickable-image favoritos" data-name="${pokemon.name}">
                 </div>
             </div>`
+
+        const selectCard = card.querySelector('.card');
+        const pokeType = pokemon.types.split(', ')[0]
+
+        selectCard.addEventListener('mouseover', () => {
+            document.body.style.backgroundColor = typeColors[pokeType] || '#f6bd20'
+        })
+
+        selectCard.addEventListener('mouseout', () => {
+            document.body.style.backgroundColor = ''
+        })
+
+        return card
+    })
+
+    Promise.all(favPromises).then(cards => {
+        cards.forEach(card => div.append(card))
         containerCard.append(div)
+    })
+
+    const favPokemonSwitch = document.querySelectorAll('.favoritos')
+    favPokemonSwitch.forEach(favPokemon => {
+        favPokemon.addEventListener('click', (e) => {
+            const pokeName = e.target.getAttribute('data-name')
+            toggleFav(pokeName)
+        })
     })
 }
 
